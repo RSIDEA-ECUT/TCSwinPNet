@@ -21,7 +21,7 @@ class H5_TrainDataset_Up(Dataset):
                 gt = to_tensor((f.get('gt')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
                 lms = to_tensor((f.get('lms')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
                 pan = to_tensor((f.get('pan')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
-            elif "GF1" or "WV2" in self.data_path:
+            elif "GF1" in self.data_path:
                 gt = to_tensor((f.get('gt')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
                 lms = to_tensor((f.get('lms')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
                 pan = to_tensor((f.get('pan')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
@@ -55,7 +55,7 @@ class H5_TrainDataset_NoUp(Dataset):
                 gt = to_tensor((f.get('gt')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
                 ms = to_tensor((f.get('ms')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
                 pan = to_tensor((f.get('pan')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
-            elif "GF1" or "WV2" in self.data_path:
+            elif "GF1" in self.data_path:
                 gt = to_tensor((f.get('gt')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
                 ms = to_tensor((f.get('ms')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
                 pan = to_tensor((f.get('pan')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
@@ -88,7 +88,7 @@ class H5_FR_TestDataset_Up(Dataset):
                 lms = to_tensor((f.get('lms')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
                 ms = to_tensor((f.get('ms')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
                 pan = to_tensor((f.get('pan')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
-            elif "GF1" or "WV2" in self.data_path:
+            elif "GF1"  in self.data_path:
                 lms = to_tensor((f.get('lms')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
                 ms = to_tensor((f.get('ms')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
                 pan = to_tensor((f.get('pan')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
@@ -120,7 +120,7 @@ class H5_FR_TestDataset_NoUp(Dataset):
             if "WV3" or "QuickBird" in self.data_path:
                 ms = to_tensor((f.get('ms')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
                 pan = to_tensor((f.get('pan')[idx] / (2 ** 11 - 1)).transpose(1, 2, 0).astype(np.float32))
-            elif "GF1" or "WV2" in self.data_path:
+            elif "GF1"  in self.data_path:
                 ms = to_tensor((f.get('ms')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
                 pan = to_tensor((f.get('pan')[idx] / (2 ** 8 - 1)).transpose(1, 2, 0).astype(np.float32))
             else:
@@ -145,3 +145,4 @@ if __name__ == '__main__':
         lms, pan, gt = data
         print(lms.shape, pan.shape, gt.shape)
         break
+
