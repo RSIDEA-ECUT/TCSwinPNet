@@ -1,68 +1,25 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from DL_Model.My_Model.Patch_Resize.KANLinear import KANLinear
-from DL_Model.My_Model.Patch_Resize.FastKANConv2D import FastKANConvLayer
+from KANLinear import KANLinear
+from FastKANConv2D import FastKANConvLayer
 import torch.nn.init as init
-from DL_Model.My_Model.No_Patch_Resize.Modify_Swin_Transformer import BasicLayer
+from Modify_Swin_Transformer import BasicLayer
 from torchstat import stat
 from thop import profile, clever_format
-
-
-def initialize_weights(net_l, scale=1):
-    if not isinstance(net_l, list):
-        net_l = [net_l]
-    for net in net_l:
-        for m in net.modules():
-            if isinstance(m, nn.Conv2d):
-                init.kaiming_normal_(m.weight, a=0, mode='fan_in')
-                m.weight.data *= scale  # for residual block
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
-                init.kaiming_normal_(m.weight, a=0, mode='fan_in')
-                m.weight.data *= scale
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            elif isinstance(m, nn.BatchNorm2d):
-                init.constant_(m.weight, 1)
-                init.constant_(m.bias.data, 0.0)
-
-
-def initialize_weights_xavier(net_l, scale=1):
-    if not isinstance(net_l, list):
-        net_l = [net_l]
-    for net in net_l:
-        for m in net.modules():
-            if isinstance(m, nn.Conv2d):
-                init.xavier_normal_(m.weight)
-                m.weight.data *= scale  # for residual block
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
-                init.xavier_normal_(m.weight)
-                m.weight.data *= scale
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            elif isinstance(m, nn.BatchNorm2d):
-                init.constant_(m.weight, 1)
-                init.constant_(m.bias.data, 0.0)
 
 
 class DepthWiseConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, padding):
         super(DepthWiseConv, self).__init__()
 
-        # 逐通道卷积
         self.depth_conv = nn.Conv2d(in_channels=in_channels,
                                     out_channels=in_channels,
                                     kernel_size=kernel_size,
                                     stride=1,
                                     padding=padding,
                                     groups=in_channels)
-        # groups是一个数，当groups=in_channel时,表示做逐通道卷积
 
-        # 逐点卷积
         self.point_conv = nn.Conv2d(in_channels=in_channels,
                                     out_channels=out_channels,
                                     kernel_size=1,
@@ -81,7 +38,6 @@ class Spa_Att(nn.Module):
     def __init__(self):
         super(Spa_Att, self).__init__()
         self.conv = FastKANConvLayer(in_channels=2, out_channels=1, kernel_size=3, padding=1)
-        # self.conv = nn.Conv2d(in_channels=2, out_channels=1, kernel_size=3, padding=1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):  # (B, C, H, W)
@@ -107,9 +63,6 @@ class Cha_Att(nn.Module):
         self.linear1 = KANLinear(in_features=in_channels, out_features=in_channels // ratio)
         self.linear2 = KANLinear(in_features=in_channels // ratio, out_features=in_channels)
 
-        # self.linear1 = nn.Linear(in_features=in_channels, out_features=in_channels // ratio)
-        # self.linear2 = nn.Linear(in_features=in_channels // ratio, out_features=in_channels)
-
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -133,19 +86,7 @@ class Cha_Att(nn.Module):
 class PAN_block(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(PAN_block, self).__init__()
-        # self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, padding=0)
         self.conv = DepthWiseConv(in_channels=in_channels, out_channels=out_channels, kernel_size=1, padding=0)
-        # self.block = nn.Sequential(
-        #     Spa_Att(),
-        #     nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=7, padding=3),
-        #     nn.ReLU(inplace=True),
-        #
-        #     nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=7, padding=3),
-        #     nn.ReLU(inplace=True),
-        #
-        #     nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=7, padding=3),
-        #
-        # )
         self.block = nn.Sequential(
             Spa_Att(),
             DepthWiseConv(in_channels=out_channels, out_channels=out_channels, kernel_size=7, padding=3),
@@ -155,7 +96,6 @@ class PAN_block(nn.Module):
             nn.ReLU(inplace=True),
 
             DepthWiseConv(in_channels=out_channels, out_channels=out_channels, kernel_size=7, padding=3),
-
         )
 
     def forward(self, x):
@@ -166,19 +106,7 @@ class PAN_block(nn.Module):
 class MS_block(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(MS_block, self).__init__()
-        # self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, padding=0)
         self.conv = DepthWiseConv(in_channels=in_channels, out_channels=out_channels, kernel_size=1, padding=0)
-        # self.block = nn.Sequential(
-        #     Cha_Att(out_channels),
-        #     nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, padding=1),
-        #     nn.ReLU(inplace=True),
-        #
-        #     nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, padding=1),
-        #     nn.ReLU(inplace=True),
-        #
-        #     nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, padding=1),
-        #
-        # )
         self.block = nn.Sequential(
             Cha_Att(out_channels),
             DepthWiseConv(in_channels=out_channels, out_channels=out_channels, kernel_size=3, padding=1),
@@ -283,7 +211,6 @@ class TCSwinPNet(nn.Module):
 
         fused_img = self.fusedconv(x4 + x1)  # (B, 4 or 8, 64, 64)
         return fused_img + ms
-        # return fused_img
 
 
 if __name__ == '__main__':
